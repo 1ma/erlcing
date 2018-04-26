@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+    <title>Ocupació Bicing</title>
+
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/metrics-graphics/2.11.0/metricsgraphics.css" rel="stylesheet" type="text/css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.1.0/leaflet.css" rel="stylesheet" type="text/css">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.10.0/d3.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/metrics-graphics/2.11.0/metricsgraphics.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.1/moment.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.1.0/leaflet.js"></script>
+
+    <style>
+        #map {
+            margin-left: 25%; margin-right: 25%; height: 400px;
+        }
+
+        #graph {
+            margin-left: 20%; margin-right: 20%; margin-top: 3%;
+        }
+    </style>
+</head>
+<body>
+<div id="container">
+    <h1>Ocupació Bicing</h1>
+    <div id="map"></div>
+    <div id="graph"></div>
+</div>
+<script defer>
+    const BCN = [41.3980, 2.180087];
+
+    let map = L.map('map', {
+        center: BCN,
+        zoom: 13
+    });
+
+    L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw',
+        {id: 'mapbox.streets'}
+    ).addTo(map);
+
+    function inferCapacity(station) {
+        return station.reduce(function(capacity, dataPoint) {
+            const candidate = parseInt(dataPoint.bikes) + parseInt(dataPoint.slots);
+
+            if (candidate > capacity) {
+                return candidate;
+            }
+
+            return capacity;
+        }, 0);
+    }
+
+    function printGraph(station, oldestDate, title, target) {
+        const capacity = inferCapacity(station);
+
+        const parsedStationData = station
+            .filter(dataPoint => oldestDate < parseInt(dataPoint.date))
+            .map(dataPoint => ({date: new Date(dataPoint.date*1000), value: parseInt(dataPoint.bikes)}));
+
+        MG.data_graphic({
+            title: title,
+            data: parsedStationData,
+            full_width: true,
+            height: 400,
+            color: '#E3001B',
+            baselines: [{value: capacity, label: `capacitat: ${capacity} places`}],
+            right: 4,
+            target: target
+        });
+    }
+
+    d3.json('stations', function(metaData) {
+        metaData.forEach(function (station) {
+            const stationLocation = [parseFloat(station.lat), parseFloat(station.lng)];
+            let marker = L.marker(stationLocation).addTo(map).on('click', function () {
+                map.setView(stationLocation, 16);
+                d3.json(`stations/${station.id}`, function(data) {
+                    const currentBikes = parseInt(data[data.length-1].bikes);
+                    marker.bindPopup(`ara mateix: ${currentBikes} bicis`).openPopup();
+                    printGraph(data, moment().subtract(1, 'week').unix(), station.address, '#graph');
+                });
+            });
+        });
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+{application, erlcing,
+ [{description, "An erlang port of https://github.com/1ma/bicing"},
+  {vsn, "0.1.0"},
+  {registered, []},
+  {mod, { erlcing_app, []}},
+  {applications,
+   [kernel,
+    stdlib,
+    elli,
+    inets,
+    ssl
+   ]},
+  {env,[]},
+  {modules, []},
+
+  {maintainers, []},
+  {licenses, ["MIT"]},
+  {links, []}
+ ]}.
