@@ -4,8 +4,10 @@
 %%% that compose the application.
 %%%
 %%%-------------------------------------------------------------------
--module(erlcing).
--export([main/0]).
+-module(erlcing_app).
+-behavior(application).
+
+-export([start/2, stop/1]).
 
 -define(HTTP_PORT, 8080).
 
@@ -18,7 +20,7 @@
 -define(COLLECTOR_SLEEP_MS, 60000).
 
 
-main() ->
+start(_, _) ->
   register(
     erlcing_db_reader,
     erlcing_db_reader:start(?PG_HOST, ?PG_PORT, ?PG_USER, ?PG_PASS, ?PG_NAME)
@@ -27,5 +29,7 @@ main() ->
     erlcing_db_writer:start(?PG_HOST, ?PG_PORT, ?PG_USER, ?PG_PASS, ?PG_NAME),
     ?COLLECTOR_SLEEP_MS
   ),
-  elli:start_link([{callback, erlcing_http}, {port, ?HTTP_PORT}]),
+  elli:start_link([{callback, erlcing_http}, {port, ?HTTP_PORT}]).
+
+stop(_) ->
   ok.
